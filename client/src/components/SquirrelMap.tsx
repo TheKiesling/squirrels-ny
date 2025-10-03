@@ -229,7 +229,10 @@ const SquirrelMap = () => {
                     width: `${30 + (pointCount / filteredSquirrels.length) * 40}px`,
                     height: `${30 + (pointCount / filteredSquirrels.length) * 40}px`,
                   }}
-                  onClick={() => handleClusterClick(cluster.id as number, longitude, latitude)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleClusterClick(cluster.id as number, longitude, latitude)
+                  }}
                 >
                   {pointCount}
                 </div>
@@ -247,7 +250,10 @@ const SquirrelMap = () => {
             >
               <div 
                 className={styles.marker}
-                onClick={() => setSelectedSquirrel(squirrel)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedSquirrel(squirrel)
+                }}
                 onMouseEnter={() => setHoveredSquirrel(squirrel)}
                 onMouseLeave={() => setHoveredSquirrel(null)}
               >
