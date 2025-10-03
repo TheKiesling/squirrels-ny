@@ -5,6 +5,7 @@ import styles from './SquirrelMap.module.css'
 import { Squirrel } from '../types'
 import { getSquirrels } from '../services/api'
 import useSquirrelClusters from '../hooks/useSquirrelClusters'
+import SquirrelModal from './SquirrelModal'
 
 const CENTRAL_PARK_CENTER = {
   longitude: -73.9665,
@@ -45,6 +46,7 @@ const SquirrelMap = () => {
     -73.99, 40.76, -73.94, 40.805,
   ])
   const [zoom, setZoom] = useState(16)
+  const [selectedSquirrel, setSelectedSquirrel] = useState<Squirrel | null>(null)
 
   useEffect(() => {
     const loadSquirrels = async () => {
@@ -149,11 +151,21 @@ const SquirrelMap = () => {
               latitude={latitude}
               anchor="bottom"
             >
-              <div className={styles.marker}>🐿️</div>
+              <div 
+                className={styles.marker}
+                onClick={() => setSelectedSquirrel(squirrel)}
+              >
+                🐿️
+              </div>
             </Marker>
           )
         })}
       </Map>
+      
+      <SquirrelModal 
+        squirrel={selectedSquirrel} 
+        onClose={() => setSelectedSquirrel(null)} 
+      />
     </div>
   )
 }
