@@ -30,3 +30,7 @@ export const getSquirrels = async (): Promise<Squirrel[]> => {
   return api.get('/squirrels')
 }
 
+export const createSquirrel = async (squirrelData: Partial<Squirrel>): Promise<Squirrel> => {
+  return api.post('/squirrels', squirrelData)
+}
+

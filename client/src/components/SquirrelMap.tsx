@@ -1,11 +1,13 @@
-import { useRef, useState, useEffect } from 'react'
-import Map, { NavigationControl, Marker, MapRef } from 'react-map-gl/maplibre'
+import { useRef, useState, useEffect, useMemo } from 'react'
+import Map, { NavigationControl, Marker, Popup, MapRef } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import styles from './SquirrelMap.module.css'
 import { Squirrel } from '../types'
 import { getSquirrels } from '../services/api'
 import useSquirrelClusters from '../hooks/useSquirrelClusters'
 import SquirrelModal from './SquirrelModal'
+import SquirrelTooltip from './SquirrelTooltip'
+import FilterPanel, { FilterState } from './FilterPanel'
 
 const CENTRAL_PARK_CENTER = {
   longitude: -73.9665,
@@ -47,6 +49,18 @@ const SquirrelMap = () => {
   ])
   const [zoom, setZoom] = useState(16)
   const [selectedSquirrel, setSelectedSquirrel] = useState<Squirrel | null>(null)
+  const [hoveredSquirrel, setHoveredSquirrel] = useState<Squirrel | null>(null)
+  const [filters, setFilters] = useState<FilterState>({
+    shift: new Set(),
+    age: new Set(),
+    primaryFurColor: new Set(),
+    highlightFurColor: new Set(),
+    location: new Set(),
+    activities: new Set(),
+    sounds: new Set(),
+    tailBehaviors: new Set(),
+    interactions: new Set(),
+  })
 
   useEffect(() => {
     const loadSquirrels = async () => {
@@ -63,8 +77,65 @@ const SquirrelMap = () => {
     loadSquirrels()
   }, [])
 
+  const filteredSquirrels = useMemo(() => {
+    return squirrels.filter(squirrel => {
+      if (filters.shift.size > 0 && !filters.shift.has(squirrel.shift)) {
+        return false
+      }
+
+      if (filters.age.size > 0 && (!squirrel.age || !filters.age.has(squirrel.age))) {
+        return false
+      }
+
+      if (filters.primaryFurColor.size > 0 && 
+          (!squirrel.primaryFurColor || !filters.primaryFurColor.has(squirrel.primaryFurColor))) {
+        return false
+      }
+
+      if (filters.highlightFurColor.size > 0 && 
+          (!squirrel.highlightFurColor || !filters.highlightFurColor.has(squirrel.highlightFurColor))) {
+        return false
+      }
+
+      if (filters.location.size > 0 && 
+          (!squirrel.location || !filters.location.has(squirrel.location))) {
+        return false
+      }
+
+      if (filters.activities.size > 0) {
+        const hasActivity = Array.from(filters.activities).some(activity => 
+          squirrel[activity as keyof Squirrel] === true
+        )
+        if (!hasActivity) return false
+      }
+
+      if (filters.sounds.size > 0) {
+        const hasSound = Array.from(filters.sounds).some(sound => 
+          squirrel[sound as keyof Squirrel] === true
+        )
+        if (!hasSound) return false
+      }
+
+      if (filters.tailBehaviors.size > 0) {
+        const hasTailBehavior = Array.from(filters.tailBehaviors).some(behavior => 
+          squirrel[behavior as keyof Squirrel] === true
+        )
+        if (!hasTailBehavior) return false
+      }
+
+      if (filters.interactions.size > 0) {
+        const hasInteraction = Array.from(filters.interactions).some(interaction => 
+          squirrel[interaction as keyof Squirrel] === true
+        )
+        if (!hasInteraction) return false
+      }
+
+      return true
+    })
+  }, [squirrels, filters])
+
   const { clusters, getClusterExpansionZoom } = useSquirrelClusters(
-    squirrels,
+    filteredSquirrels,
     bounds,
     zoom
   )
@@ -132,8 +203,8 @@ const SquirrelMap = () => {
                 <div
                   className={styles.clusterMarker}
                   style={{
-                    width: `${30 + (pointCount / squirrels.length) * 40}px`,
-                    height: `${30 + (pointCount / squirrels.length) * 40}px`,
+                    width: `${30 + (pointCount / filteredSquirrels.length) * 40}px`,
+                    height: `${30 + (pointCount / filteredSquirrels.length) * 40}px`,
                   }}
                   onClick={() => handleClusterClick(cluster.id as number, longitude, latitude)}
                 >
@@ -154,17 +225,39 @@ const SquirrelMap = () => {
               <div 
                 className={styles.marker}
                 onClick={() => setSelectedSquirrel(squirrel)}
+                onMouseEnter={() => setHoveredSquirrel(squirrel)}
+                onMouseLeave={() => setHoveredSquirrel(null)}
               >
                 🐿️
               </div>
             </Marker>
           )
         })}
+
+        {hoveredSquirrel && (
+          <Popup
+            longitude={hoveredSquirrel.longitude}
+            latitude={hoveredSquirrel.latitude}
+            anchor="top"
+            closeButton={false}
+            closeOnClick={false}
+            offset={15}
+            className={styles.popup}
+          >
+            <SquirrelTooltip squirrel={hoveredSquirrel} />
+          </Popup>
+        )}
       </Map>
       
       <SquirrelModal 
         squirrel={selectedSquirrel} 
         onClose={() => setSelectedSquirrel(null)} 
+      />
+      
+      <FilterPanel 
+        squirrels={squirrels}
+        filters={filters}
+        onFiltersChange={setFilters}
       />
     </div>
   )

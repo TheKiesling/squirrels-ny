@@ -87,3 +87,13 @@
   transform: scale(1.15);
   box-shadow: 0 4px 16px rgba(44, 95, 45, 0.5);
 }
+
+.popup :global(.maplibregl-popup-content) {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.popup :global(.maplibregl-popup-tip) {
+  display: none;
+}
