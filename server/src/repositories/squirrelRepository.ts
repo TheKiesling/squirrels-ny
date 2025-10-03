@@ -254,3 +254,4 @@ export const bulkInsert = async (squirrels: Squirrel[]): Promise<number> => {
   }
 }
 
+

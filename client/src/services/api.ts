@@ -1,3 +1,5 @@
+import { Squirrel } from '../types'
+
 const API_BASE_URL = '/api'
 
 export const api = {
@@ -22,5 +24,9 @@ export const api = {
     }
     return response.json()
   },
+}
+
+export const getSquirrels = async (): Promise<Squirrel[]> => {
+  return api.get('/squirrels')
 }
 
