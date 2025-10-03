@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect, useMemo } from 'react'
-import Map, { NavigationControl, Marker, Popup, MapRef } from 'react-map-gl/maplibre'
+import Map, { NavigationControl, Marker, Popup, MapRef, MapLayerMouseEvent } from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import styles from './SquirrelMap.module.css'
 import { Squirrel } from '../types'
 import { getSquirrels } from '../services/api'
 import useSquirrelClusters from '../hooks/useSquirrelClusters'
 import SquirrelModal from './SquirrelModal'
+import SquirrelFormModal from './SquirrelFormModal'
 import SquirrelTooltip from './SquirrelTooltip'
 import FilterPanel, { FilterState } from './FilterPanel'
 
@@ -50,6 +51,7 @@ const SquirrelMap = () => {
   const [zoom, setZoom] = useState(16)
   const [selectedSquirrel, setSelectedSquirrel] = useState<Squirrel | null>(null)
   const [hoveredSquirrel, setHoveredSquirrel] = useState<Squirrel | null>(null)
+  const [newSquirrelCoords, setNewSquirrelCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [filters, setFilters] = useState<FilterState>({
     shift: new Set(),
     age: new Set(),
@@ -164,6 +166,25 @@ const SquirrelMap = () => {
     })
   }
 
+  const handleMapClick = (event: MapLayerMouseEvent) => {
+    const features = event.features
+    if (features && features.length > 0) {
+      return
+    }
+
+    const { lng, lat } = event.lngLat
+    setNewSquirrelCoords({ latitude: lat, longitude: lng })
+  }
+
+  const handleSquirrelCreated = async () => {
+    try {
+      const data = await getSquirrels()
+      setSquirrels(data)
+    } catch (error) {
+      console.error('Error reloading squirrels:', error)
+    }
+  }
+
   return (
     <div className={styles.mapContainer}>
       <Map
@@ -185,6 +206,8 @@ const SquirrelMap = () => {
         touchZoomRotate={false}
         onMove={handleMapMove}
         onZoom={handleMapMove}
+        onClick={handleMapClick}
+        interactiveLayerIds={[]}
       >
         <NavigationControl position="top-right" showCompass={false} />
         
@@ -253,6 +276,15 @@ const SquirrelMap = () => {
         squirrel={selectedSquirrel} 
         onClose={() => setSelectedSquirrel(null)} 
       />
+
+      {newSquirrelCoords && (
+        <SquirrelFormModal
+          latitude={newSquirrelCoords.latitude}
+          longitude={newSquirrelCoords.longitude}
+          onClose={() => setNewSquirrelCoords(null)}
+          onSuccess={handleSquirrelCreated}
+        />
+      )}
       
       <FilterPanel 
         squirrels={squirrels}
